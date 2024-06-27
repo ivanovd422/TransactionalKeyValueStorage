@@ -1,0 +1,32 @@
+<resources>
+    <string name="app_name">TransactionalKeyValueStorage</string>
+    <string name="execution_error_no_such_item">No such item</string>
+    <string name="execution_error_no_transaction">There is no transaction</string>
+
+    <string name="execution_success_set_key_value">Key %1$s and Value %2$s have been added</string>
+    <string name="execution_success_get_by_key">The store contains value %2$s by key %1$s</string>
+    <string name="execution_success_delete">Value %2$s has been removed from the storage by key %1$s</string>
+    <string name="execution_success_count">%2$s values found for key %1$s</string>
+
+    <string name="dialog_title_success">Success</string>
+    <string name="dialog_title_error">Error</string>
+    <string name="dialog_title_info">Info</string>
+    <string name="dialog_button_ok">OK</string>
+    <string name="main_screen_group_title_key">Key</string>
+    <string name="main_screen_group_title_value">Value</string>
+    <string name="main_screen_group_title_count_by_value">Count by value</string>
+    <string name="main_screen_group_title_delete_by_key">Delete by key</string>
+    <string name="main_screen_button_execute">Execute</string>
+    <string name="main_screen_radio_title_set">Set</string>
+    <string name="main_screen_radio_title_get">Get</string>
+    <string name="main_screen_radio_title_delete">Delete</string>
+    <string name="main_screen_radio_title_count">Count</string>
+    <string name="main_screen_button_begin">Begin</string>
+    <string name="main_screen_button_commit">Commit</string>
+    <string name="main_screen_button_rollback">Rollback</string>
+    <string name="main_screen_transaction_started">New transaction has been started</string>
+    <string name="main_screen_transaction_committed">The transaction has been committed</string>
+    <string name="main_screen_transaction_rolled_back">The transaction has been rolled back</string>
+    <string name="main_screen_transaction_status">Transactions in progress: </string>
+
+</resources>
