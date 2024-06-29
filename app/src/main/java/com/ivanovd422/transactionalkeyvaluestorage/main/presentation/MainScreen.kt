@@ -27,6 +27,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ivanovd422.transactionalkeyvaluestorage.R
+import com.ivanovd422.transactionalkeyvaluestorage.main.domain.Command
 import com.ivanovd422.transactionalkeyvaluestorage.main.presentation.dialog.InfoDialog
 
 
@@ -111,7 +112,7 @@ internal fun MainScreen(
 @Composable
 private fun TransactionGroup(
     count: Int,
-    onAction: (KeyValueStorageAction.Transaction) -> Unit
+    onAction: (KeyValueStorageAction.ExecuteCommand) -> Unit
 ) {
     val title = stringResource(id = R.string.main_screen_transaction_status)
     Column(
@@ -126,13 +127,13 @@ private fun TransactionGroup(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.Bottom
         ) {
-            Button(onClick = { onAction.invoke(KeyValueStorageAction.Transaction.BeginTransactionCommand) }) {
+            Button(onClick = { onAction.invoke(KeyValueStorageAction.ExecuteCommand(Command.Begin)) }) {
                 Text(stringResource(id = R.string.main_screen_button_begin))
             }
-            Button(onClick = { onAction.invoke(KeyValueStorageAction.Transaction.CommitTransactionCommand) }) {
+            Button(onClick = { onAction.invoke(KeyValueStorageAction.ExecuteCommand(Command.Commit)) }) {
                 Text(stringResource(id = R.string.main_screen_button_commit))
             }
-            Button(onClick = { onAction.invoke(KeyValueStorageAction.Transaction.RollbackTransactionCommand) }) {
+            Button(onClick = { onAction.invoke(KeyValueStorageAction.ExecuteCommand(Command.Rollback)) }) {
                 Text(stringResource(id = R.string.main_screen_button_rollback))
             }
         }
@@ -187,7 +188,7 @@ private fun SetCommandGroup(
                 keyboardController?.hide()
                 onAction.invoke(
                     KeyValueStorageAction.ExecuteCommand(
-                        Command.SetCommand(
+                        Command.Set(
                             key = keyText,
                             value = valueText
                         )
@@ -228,7 +229,7 @@ private fun GetCommandGroup(
                 keyboardController?.hide()
                 onAction.invoke(
                     KeyValueStorageAction.ExecuteCommand(
-                        Command.GetCommand(
+                        Command.Get(
                             key = keyText
                         )
                     )
@@ -270,7 +271,7 @@ private fun DeleteCommandGroup(
                 keyboardController?.hide()
                 onAction.invoke(
                     KeyValueStorageAction.ExecuteCommand(
-                        Command.DeleteCommand(
+                        Command.Delete(
                             key = keyText,
                         )
                     )
@@ -311,7 +312,7 @@ private fun CountCommandGroup(
                 keyboardController?.hide()
                 onAction.invoke(
                     KeyValueStorageAction.ExecuteCommand(
-                        Command.CountCommand(
+                        Command.Count(
                             value = valueText,
                         )
                     )

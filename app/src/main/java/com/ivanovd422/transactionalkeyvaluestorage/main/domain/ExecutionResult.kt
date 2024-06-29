@@ -22,14 +22,6 @@ inline fun <T> ExecutionResult<T>.onSuccess(action: (value: T) -> Unit): Executi
     return this
 }
 
-inline fun <T> ExecutionResult<T>.onAnyResult(action: (value: T?, executionError: ExecutionError?) -> Unit): ExecutionResult<T> {
-    when (this) {
-        is ExecutionResult.Success -> action(value, null)
-        is ExecutionResult.Error -> action(null, executionError)
-    }
-    return this
-}
-
 enum class ExecutionError(val error: Int) {
     NO_SUCH_ITEM(R.string.execution_error_no_such_item),
     TRANSACTION_IS_EMPTY(R.string.execution_error_no_transaction),

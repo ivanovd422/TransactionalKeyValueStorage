@@ -7,12 +7,45 @@ import javax.inject.Inject
 class MainInteractor @Inject constructor(
     private val storage: KeyValueStorage
 ) {
-    fun set(key: String, value: String): ExecutionResult<Pair<String, String>> {
-        storage.set(key, value)
-        return ExecutionResult.Success((Pair(key, value)))
+
+    suspend fun executeCommand(command: Command): ExecutionResult<out Any> {
+        return when (command) {
+            is Command.Set -> {
+                set(command.key, command.value)
+            }
+
+            is Command.Get -> {
+                get(command.key)
+            }
+
+            is Command.Delete -> {
+                delete(command.key)
+            }
+
+            is Command.Count -> {
+                count(command.value)
+            }
+
+            is Command.Begin -> {
+                beginTransaction()
+            }
+
+            is Command.Commit -> {
+                commitTransaction()
+            }
+
+            is Command.Rollback -> {
+                rollbackTransaction()
+            }
+        }
     }
 
-    fun get(key: String): ExecutionResult<String> {
+    private suspend fun set(key: String, value: String): ExecutionResult<Unit> {
+        storage.set(key, value)
+        return ExecutionResult.Success(Unit)
+    }
+
+    private suspend fun get(key: String): ExecutionResult<String> {
         val value = storage.get(key)
 
         return if (value == null) {
@@ -22,7 +55,7 @@ class MainInteractor @Inject constructor(
         }
     }
 
-    fun delete(key: String): ExecutionResult<String> {
+    private suspend fun delete(key: String): ExecutionResult<String> {
         if (storage.get(key) == null) {
             return ExecutionResult.Error(ExecutionError.NO_SUCH_ITEM)
         }
@@ -36,7 +69,7 @@ class MainInteractor @Inject constructor(
         }
     }
 
-    fun count(value: String): ExecutionResult<Int> {
+    private suspend fun count(value: String): ExecutionResult<Int> {
         val count = storage.count(value)
 
         return if (count == null) {
@@ -46,12 +79,12 @@ class MainInteractor @Inject constructor(
         }
     }
 
-    fun beginTransaction(): ExecutionResult<Unit> {
+    private suspend fun beginTransaction(): ExecutionResult<Unit> {
         storage.beginTransaction()
         return ExecutionResult.Success(Unit)
     }
 
-    fun commitTransaction(): ExecutionResult<Unit> {
+    private suspend fun commitTransaction(): ExecutionResult<Unit> {
         return try {
             storage.commitTransaction()
             ExecutionResult.Success(Unit)
@@ -60,7 +93,7 @@ class MainInteractor @Inject constructor(
         }
     }
 
-    fun rollbackTransaction(): ExecutionResult<Unit> {
+    private suspend fun rollbackTransaction(): ExecutionResult<Unit> {
         return try {
             storage.rollbackTransaction()
             ExecutionResult.Success(Unit)

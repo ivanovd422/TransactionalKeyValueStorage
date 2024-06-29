@@ -4,19 +4,23 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.ivanovd422.transactionalkeyvaluestorage.R
+import com.ivanovd422.transactionalkeyvaluestorage.main.domain.Command
 import com.ivanovd422.transactionalkeyvaluestorage.main.domain.MainInteractor
-import com.ivanovd422.transactionalkeyvaluestorage.main.domain.onAnyResult
 import com.ivanovd422.transactionalkeyvaluestorage.main.domain.onFailure
 import com.ivanovd422.transactionalkeyvaluestorage.main.domain.onSuccess
 import com.ivanovd422.transactionalkeyvaluestorage.main.presentation.dialog.DialogMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val mainInteractor: MainInteractor
+    private val mainInteractor: MainInteractor,
 ) : ViewModel() {
 
     var mainState by mutableStateOf(MainState())
@@ -34,10 +38,9 @@ class MainViewModel @Inject constructor(
             }
 
             is KeyValueStorageAction.ExecuteCommand -> {
-                handleExecuteCommand(action.command)
+                handleCommand(action.command)
             }
 
-            is KeyValueStorageAction.Transaction -> handleTransaction(action)
         }
     }
 
@@ -47,109 +50,79 @@ class MainViewModel @Inject constructor(
         )
     }
 
-    private fun handleTransaction(action: KeyValueStorageAction.Transaction) {
-        when (action) {
-            KeyValueStorageAction.Transaction.BeginTransactionCommand -> {
-                mainInteractor.beginTransaction().onAnyResult { _, _ ->
-                    mainState = mainState.copy(
-                        transactionsInProgress = mainState.transactionsInProgress + 1
-                    )
-                    showDialog(DialogMessage.Info(R.string.main_screen_transaction_started))
-                }
-            }
-
-            KeyValueStorageAction.Transaction.CommitTransactionCommand -> {
-                mainInteractor.commitTransaction()
-                    .onSuccess {
-                        mainState = mainState.copy(
-                            transactionsInProgress = mainState.transactionsInProgress - 1
-                        )
-                        showDialog(DialogMessage.Info(R.string.main_screen_transaction_committed))
-                    }
-                    .onFailure {
-                        showDialog(DialogMessage.Error(it.error))
-                    }
-            }
-
-            KeyValueStorageAction.Transaction.RollbackTransactionCommand -> {
-                mainInteractor.rollbackTransaction()
-                    .onSuccess {
-                        mainState = mainState.copy(
-                            transactionsInProgress = mainState.transactionsInProgress - 1
-                        )
-                        showDialog(DialogMessage.Info(R.string.main_screen_transaction_rolled_back))
-                    }
-                    .onFailure {
-                        showDialog(DialogMessage.Error(it.error))
-                    }
+    private fun handleCommand(command: Command) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                mainInteractor.executeCommand(command)
+            }.onSuccess {
+                handleCommandSuccess(command, it)
+            }.onFailure {
+                showDialog(DialogMessage.Error(it.error))
             }
         }
     }
 
-    private fun handleExecuteCommand(command: Command) {
+    private fun handleCommandSuccess(command: Command, result: Any) {
         when (command) {
-            is Command.SetCommand -> {
-                mainInteractor.set(command.key, command.value)
-                    .onSuccess {
-                        showDialog(
-                            DialogMessage.Success(
-                                text = R.string.execution_success_set_key_value,
-                                key = it.first,
-                                value = it.second,
-                            )
-                        )
-                    }
-                    .onFailure {
-                        showDialog(DialogMessage.Error(it.error))
-                    }
+            is Command.Set -> {
+                showDialog(
+                    DialogMessage.Success(
+                        text = R.string.execution_success_set_key_value,
+                        key = command.key,
+                        value = command.value,
+                    )
+                )
             }
 
-            is Command.GetCommand -> {
-                mainInteractor.get(command.key)
-                    .onSuccess {
-                        showDialog(
-                            DialogMessage.Success(
-                                text = R.string.execution_success_get_by_key,
-                                key = command.key,
-                                value = it,
-                            )
-                        )
-                    }
-                    .onFailure {
-                        showDialog(DialogMessage.Error(it.error))
-                    }
+            is Command.Get -> {
+                showDialog(
+                    DialogMessage.Success(
+                        text = R.string.execution_success_get_by_key,
+                        key = command.key,
+                        value = result as String,
+                    )
+                )
             }
 
-            is Command.DeleteCommand -> {
-                mainInteractor.delete(command.key)
-                    .onSuccess {
-                        showDialog(
-                            DialogMessage.Success(
-                                text = R.string.execution_success_delete,
-                                key = command.key,
-                                value = it,
-                            )
-                        )
-                    }
-                    .onFailure {
-                        showDialog(DialogMessage.Error(it.error))
-                    }
+            is Command.Delete -> {
+                showDialog(
+                    DialogMessage.Success(
+                        text = R.string.execution_success_delete,
+                        key = command.key,
+                        value = result as String,
+                    )
+                )
             }
 
-            is Command.CountCommand -> {
-                mainInteractor.count(command.value)
-                    .onSuccess {
-                        showDialog(
-                            DialogMessage.Success(
-                                text = R.string.execution_success_count,
-                                key = command.value,
-                                value = it.toString(),
-                            )
-                        )
-                    }
-                    .onFailure {
-                        showDialog(DialogMessage.Error(it.error))
-                    }
+            is Command.Count -> {
+                showDialog(
+                    DialogMessage.Success(
+                        text = R.string.execution_success_count,
+                        key = command.value,
+                        value = (result as Int).toString(),
+                    )
+                )
+            }
+
+            is Command.Begin -> {
+                mainState = mainState.copy(
+                    transactionsInProgress = mainState.transactionsInProgress + 1
+                )
+                showDialog(DialogMessage.Info(R.string.main_screen_transaction_started))
+            }
+
+            is Command.Commit -> {
+                mainState = mainState.copy(
+                    transactionsInProgress = mainState.transactionsInProgress - 1
+                )
+                showDialog(DialogMessage.Info(R.string.main_screen_transaction_committed))
+            }
+
+            is Command.Rollback -> {
+                mainState = mainState.copy(
+                    transactionsInProgress = mainState.transactionsInProgress - 1
+                )
+                showDialog(DialogMessage.Info(R.string.main_screen_transaction_rolled_back))
             }
         }
     }

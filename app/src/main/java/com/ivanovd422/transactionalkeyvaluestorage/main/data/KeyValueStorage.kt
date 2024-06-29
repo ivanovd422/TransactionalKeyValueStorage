@@ -1,7 +1,8 @@
 package com.ivanovd422.transactionalkeyvaluestorage.main.data
 
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.Stack
-import java.util.concurrent.locks.ReentrantReadWriteLock
 import javax.inject.Inject
 
 class KeyValueStorage @Inject constructor() {
@@ -9,14 +10,10 @@ class KeyValueStorage @Inject constructor() {
     private val storage = mutableMapOf<String, String>()
     private val valuesCount = mutableMapOf<String, Int>()
     private val transactionStack = Stack<Transaction>()
+    private val mutex = Mutex()
 
-    private val rwLock = ReentrantReadWriteLock()
-    private val readLock = rwLock.readLock()
-    private val writeLock = rwLock.writeLock()
-
-    fun set(key: String, value: String) {
-        writeLock.lock()
-        try {
+    suspend fun set(key: String, value: String) {
+        mutex.withLock {
             if (transactionStack.isEmpty()) {
                 if (storage.containsKey(key) && storage[key] != value) {
                     val oldValue = storage[key]!!
@@ -46,27 +43,21 @@ class KeyValueStorage @Inject constructor() {
                     sessionStorage[key] = value
                 }
             }
-        } finally {
-            writeLock.unlock()
         }
     }
 
-    fun get(key: String): String? {
-        readLock.lock()
-        try {
-            return if (transactionStack.isEmpty()) {
+    suspend fun get(key: String): String? {
+        return mutex.withLock {
+            if (transactionStack.isEmpty()) {
                 storage[key]
             } else {
                 transactionStack.peek().sessionStorage[key]
             }
-        } finally {
-            readLock.unlock()
         }
     }
 
-    fun delete(key: String): String? {
-        writeLock.lock()
-        try {
+    suspend fun delete(key: String): String? {
+        return mutex.withLock {
             if (transactionStack.isEmpty()) {
                 val value = storage[key]
                 if (valuesCount[value]!! > 1) {
@@ -74,39 +65,32 @@ class KeyValueStorage @Inject constructor() {
                 } else {
                     valuesCount.remove(value)
                 }
-                return storage.remove(key)
+                storage.remove(key)
             } else {
-                transactionStack.peek().apply {
-                    val value = sessionStorage[key]
-                    if (sessionValuesCount[value]!! > 1) {
-                        sessionValuesCount[value!!] = sessionValuesCount[value]!! - 1
-                    } else {
-                        sessionValuesCount.remove(value)
-                    }
-                    return sessionStorage.remove(key)
+                val transaction = transactionStack.peek()
+                val value = transaction.sessionStorage[key]
+                if (transaction.sessionValuesCount[value]!! > 1) {
+                    transaction.sessionValuesCount[value!!] = transaction.sessionValuesCount[value]!! - 1
+                } else {
+                    transaction.sessionValuesCount.remove(value)
                 }
+                transaction.sessionStorage.remove(key)
             }
-        } finally {
-            writeLock.unlock()
         }
     }
 
-    fun count(value: String): Int? {
-        readLock.lock()
-        try {
-            return if (transactionStack.isEmpty()) {
+    suspend fun count(value: String): Int? {
+        return mutex.withLock {
+            if (transactionStack.isEmpty()) {
                 valuesCount[value]
             } else {
                 transactionStack.peek().sessionValuesCount[value]
             }
-        } finally {
-            readLock.unlock()
         }
     }
 
-    fun beginTransaction() {
-        writeLock.lock()
-        try {
+    suspend fun beginTransaction() {
+        mutex.withLock {
             if (transactionStack.isEmpty()) {
                 transactionStack.add(Transaction(storage.toMutableMap(), valuesCount.toMutableMap()))
             } else {
@@ -118,14 +102,11 @@ class KeyValueStorage @Inject constructor() {
                     )
                 )
             }
-        } finally {
-            writeLock.unlock()
         }
     }
 
-    fun commitTransaction() {
-        writeLock.lock()
-        try {
+    suspend fun commitTransaction() {
+        mutex.withLock {
             val transaction = transactionStack.pop()
             if (transactionStack.isEmpty()) {
                 storage.apply {
@@ -144,17 +125,12 @@ class KeyValueStorage @Inject constructor() {
                     sessionValuesCount.putAll(transaction.sessionValuesCount)
                 }
             }
-        } finally {
-            writeLock.unlock()
         }
     }
 
-    fun rollbackTransaction() {
-        writeLock.lock()
-        try {
+    suspend fun rollbackTransaction() {
+        mutex.withLock {
             transactionStack.pop()
-        } finally {
-            writeLock.unlock()
         }
     }
 }
