@@ -27,20 +27,13 @@ class MainViewModel @Inject constructor(
 
     fun onAction(action: KeyValueStorageAction) {
         when (action) {
-            is KeyValueStorageAction.ChangeTypeCommand -> {
-                changeTypeCommand(action.commandType)
-            }
-
+            is KeyValueStorageAction.ChangeTypeCommand ->  changeTypeCommand(action.commandType)
+            is KeyValueStorageAction.ExecuteCommand -> handleCommand(action.command)
             is KeyValueStorageAction.DialogClosed -> {
                 mainState = mainState.copy(
                     dialogMessage = null
                 )
             }
-
-            is KeyValueStorageAction.ExecuteCommand -> {
-                handleCommand(action.command)
-            }
-
         }
     }
 

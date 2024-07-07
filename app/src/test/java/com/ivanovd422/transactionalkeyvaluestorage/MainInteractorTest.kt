@@ -9,7 +9,7 @@ import org.junit.Test
 import com.nhaarman.mockitokotlin2.mock
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertTrue
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 
 class MainInteractorTest {
 
@@ -19,21 +19,21 @@ class MainInteractorTest {
     private val value = "value"
 
     @Test
-    fun `should return pair of key,value which were set`() = runBlocking {
+    fun `should return pair of key,value which were set`() = runTest {
         val result = interactor.executeCommand(Command.Set(key, value))
 
         assertTrue(result is ExecutionResult.Success)
     }
 
     @Test
-    fun `should return error when there is no such value`() = runBlocking {
+    fun `should return error when there is no such value`() = runTest {
         whenever(storageMock.get(key)).thenReturn(null)
         val result = interactor.executeCommand(Command.Get(key))
         assertTrue(result is ExecutionResult.Error)
     }
 
     @Test
-    fun `should return correct value when there is such value`() = runBlocking {
+    fun `should return correct value when there is such value`() = runTest {
         whenever(storageMock.get(key)).thenReturn(value)
         val result = interactor.executeCommand(Command.Get(key))
         assertTrue(result is ExecutionResult.Success)
@@ -41,14 +41,14 @@ class MainInteractorTest {
     }
 
     @Test
-    fun `should return error during deleting if there is no such value`() = runBlocking {
+    fun `should return error during deleting if there is no such value`() = runTest {
         whenever(storageMock.get(key)).thenReturn(null)
         val result = interactor.executeCommand(Command.Delete(key))
         assertTrue(result is ExecutionResult.Error)
     }
 
     @Test
-    fun `should return success with deleted value`() = runBlocking {
+    fun `should return success with deleted value`() = runTest {
         whenever(storageMock.get(key)).thenReturn(value)
         whenever(storageMock.delete(key)).thenReturn(value)
         val result = interactor.executeCommand(Command.Delete(key))
@@ -57,14 +57,14 @@ class MainInteractorTest {
     }
 
     @Test
-    fun `should return null count when there is no such value`() = runBlocking {
+    fun `should return null count when there is no such value`() = runTest {
         whenever(storageMock.count(value)).thenReturn(null)
         val result = interactor.executeCommand(Command.Count(value))
         assertTrue(result is ExecutionResult.Error)
     }
 
     @Test
-    fun `should return correct count`() = runBlocking {
+    fun `should return correct count`() = runTest {
         whenever(storageMock.count(value)).thenReturn(10)
         val result = interactor.executeCommand(Command.Count(value))
         assertTrue(result is ExecutionResult.Success)
@@ -72,33 +72,33 @@ class MainInteractorTest {
     }
 
     @Test
-    fun `should always return success when begins transaction`() = runBlocking {
+    fun `should always return success when begins transaction`() = runTest {
         val result = interactor.executeCommand(Command.Begin)
         assertTrue(result is ExecutionResult.Success)
     }
 
     @Test
-    fun `should return error when storage throws an exception during commitment`() = runBlocking {
+    fun `should return error when storage throws an exception during commitment`() = runTest {
         whenever(storageMock.commitTransaction()).thenThrow(RuntimeException("Exception"))
         val result = interactor.executeCommand(Command.Commit)
         assertTrue(result is ExecutionResult.Error)
     }
 
     @Test
-    fun `should return success when storage begins transaction`() = runBlocking {
+    fun `should return success when storage begins transaction`() = runTest {
         val result = interactor.executeCommand(Command.Commit)
         assertTrue(result is ExecutionResult.Success)
     }
 
     @Test
-    fun `should return error when storage throws an exception during rolling back`() = runBlocking {
+    fun `should return error when storage throws an exception during rolling back`() = runTest {
         whenever(storageMock.rollbackTransaction()).thenThrow(RuntimeException("Exception"))
         val result = interactor.executeCommand(Command.Rollback)
         assertTrue(result is ExecutionResult.Error)
     }
 
     @Test
-    fun `should return success when storage rolls back`() = runBlocking {
+    fun `should return success when storage rolls back`() = runTest {
         val result = interactor.executeCommand(Command.Rollback)
         assertTrue(result is ExecutionResult.Success)
     }

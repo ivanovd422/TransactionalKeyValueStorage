@@ -6,17 +6,18 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineDispatcher
 import javax.inject.Singleton
 
 
-@Module
+@Module(includes = [DispatcherModule::class])
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
     @Provides
     @Singleton
-    fun provideKeyValueStorage(): KeyValueStorage {
-        return KeyValueStorage()
+    fun provideKeyValueStorage(@SingleThreadDispatcher dispatcher: CoroutineDispatcher): KeyValueStorage {
+        return KeyValueStorage(dispatcher)
     }
 
     @Provides

@@ -10,33 +10,13 @@ class MainInteractor @Inject constructor(
 
     suspend fun executeCommand(command: Command): ExecutionResult<out Any> {
         return when (command) {
-            is Command.Set -> {
-                set(command.key, command.value)
-            }
-
-            is Command.Get -> {
-                get(command.key)
-            }
-
-            is Command.Delete -> {
-                delete(command.key)
-            }
-
-            is Command.Count -> {
-                count(command.value)
-            }
-
-            is Command.Begin -> {
-                beginTransaction()
-            }
-
-            is Command.Commit -> {
-                commitTransaction()
-            }
-
-            is Command.Rollback -> {
-                rollbackTransaction()
-            }
+            is Command.Set -> set(command.key, command.value)
+            is Command.Get -> get(command.key)
+            is Command.Delete -> delete(command.key)
+            is Command.Count -> count(command.value)
+            is Command.Begin -> beginTransaction()
+            is Command.Commit -> commitTransaction()
+            is Command.Rollback -> rollbackTransaction()
         }
     }
 
